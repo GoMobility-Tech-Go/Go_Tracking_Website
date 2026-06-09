@@ -25,30 +25,42 @@ export default function ShareButton({ token }) {
   };
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-gray-400 font-medium text-center">Share live tracking with someone</p>
-      <div className="flex gap-2">
+    <div className="bg-white rounded-2xl border border-royal-100 shadow-royal overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-royal-900 via-gold-500 to-royal-900" />
+      <div className="p-4">
+        <p className="text-[10px] text-royal-400 font-bold uppercase tracking-widest mb-3">Share Live Tracking</p>
+
+        <div className="flex gap-2 mb-2">
+          {/* WhatsApp */}
+          <button
+            onClick={shareWhatsApp}
+            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:scale-[1.02] active:scale-95"
+          >
+            <span className="text-base">📤</span> WhatsApp
+          </button>
+
+          {/* Copy */}
+          <button
+            onClick={copyLink}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:scale-[1.02] active:scale-95
+              ${copied
+                ? 'bg-gradient-to-r from-green-400 to-green-500 text-white'
+                : 'bg-gradient-to-r from-royal-900 to-royal-700 text-white hover:from-royal-800 hover:to-royal-600'
+              }`}
+          >
+            <span className="text-base">{copied ? '✅' : '📋'}</span>
+            {copied ? 'Copied!' : 'Copy Link'}
+          </button>
+        </div>
+
+        {/* Share via apps */}
         <button
-          onClick={shareWhatsApp}
-          className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-2xl text-sm font-semibold transition-colors shadow-sm"
+          onClick={shareNative}
+          className="w-full flex items-center justify-center gap-2 bg-royal-50 hover:bg-royal-100 text-royal-700 py-2.5 rounded-xl text-xs font-bold transition-colors border border-royal-200"
         >
-          <span className="text-base">📤</span> WhatsApp
-        </button>
-        <button
-          onClick={copyLink}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all shadow-sm
-            ${copied ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-primary-700 hover:bg-primary-800 text-white'}`}
-        >
-          <span className="text-base">{copied ? '✅' : '📋'}</span>
-          {copied ? 'Copied!' : 'Copy Link'}
+          <span>↗️</span> Share via other apps
         </button>
       </div>
-      <button
-        onClick={shareNative}
-        className="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-600 py-2.5 rounded-2xl text-xs font-medium transition-colors border border-gray-200"
-      >
-        <span>↗️</span> Share via other apps
-      </button>
     </div>
   );
 }

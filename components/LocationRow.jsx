@@ -1,31 +1,29 @@
 export default function LocationRow({ pickup, dropoff }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-sm">📍</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Pickup</p>
-          <p className="text-sm font-semibold text-gray-800 leading-snug">{pickup}</p>
-        </div>
-      </div>
+    <div className="bg-white rounded-2xl border border-royal-100 shadow-royal overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-royal-900 via-gold-500 to-royal-900" />
+      <div className="p-4">
+        <p className="text-[10px] text-royal-400 font-bold uppercase tracking-widest mb-3">Route</p>
 
-      <div className="flex items-center gap-3 pl-3.5">
-        <div className="w-1 flex flex-col gap-1 items-center">
-          <div className="w-0.5 h-1.5 bg-gray-300 rounded-full" />
-          <div className="w-0.5 h-1.5 bg-gray-300 rounded-full" />
-          <div className="w-0.5 h-1.5 bg-gray-300 rounded-full" />
-        </div>
-      </div>
+        <div className="flex gap-3">
+          {/* Line */}
+          <div className="flex flex-col items-center gap-0 flex-shrink-0 pt-1">
+            <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-white shadow" />
+            <div className="w-0.5 flex-1 bg-gradient-to-b from-green-400 to-royal-400 my-1" style={{ minHeight: '24px' }} />
+            <div className="w-3 h-3 rounded-full bg-royal-900 border-2 border-white shadow" />
+          </div>
 
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-sm">🏁</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Dropoff</p>
-          <p className="text-sm font-semibold text-gray-800 leading-snug">{dropoff}</p>
+          {/* Addresses */}
+          <div className="flex-1 space-y-2">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-2.5">
+              <p className="text-[9px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Pickup</p>
+              <p className="text-sm font-bold text-royal-900 leading-snug">{pickup}</p>
+            </div>
+            <div className="bg-royal-50 border border-royal-200 rounded-xl p-2.5">
+              <p className="text-[9px] text-royal-600 font-bold uppercase tracking-wider mb-0.5">Dropoff</p>
+              <p className="text-sm font-bold text-royal-900 leading-snug">{dropoff}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,31 +1,36 @@
 'use client';
 
 const statusConfig = {
-  accepted:       { label: 'Driver Coming',    color: 'bg-blue-100 text-blue-700',   dot: 'bg-blue-500' },
-  driver_arrived: { label: 'Driver Arrived',   color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
-  in_progress:    { label: 'Ride In Progress', color: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
-  completed:      { label: 'Completed',        color: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400' },
+  accepted:       { label: 'Driver Coming',    color: 'bg-blue-500/20 text-gold-300 border border-gold-500/40',    dot: 'bg-gold-400' },
+  driver_arrived: { label: 'Driver Arrived',   color: 'bg-amber-500/20 text-amber-300 border border-amber-400/40', dot: 'bg-amber-400' },
+  in_progress:    { label: 'Ride In Progress', color: 'bg-green-500/20 text-green-300 border border-green-400/40', dot: 'bg-green-400' },
+  completed:      { label: 'Completed',        color: 'bg-gray-500/20 text-gray-300 border border-gray-400/40',    dot: 'bg-gray-400' },
 };
 
 export default function Navbar({ status }) {
   const cfg = status ? statusConfig[status] : null;
 
   return (
-    <nav className="bg-primary-700 shadow-lg z-50 relative">
-      <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow">
-            <span className="text-base">🚗</span>
-          </div>
-          <div>
-            <span className="text-white font-bold text-base leading-none">GoMobility</span>
-            <span className="block text-blue-200 text-[10px] leading-none">Live Tracking</span>
+    <nav className="shadow-2xl z-50 relative border-b border-white/10" style={{ background: '#0E1B55' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+
+        {/* Logo — bg matches exactly, blends seamlessly */}
+        <div className="flex items-center gap-1">
+          <img
+            src="/go-logo.jpeg"
+            alt="GoMobility"
+            className="h-12 w-12 object-cover"
+          />
+          <div className="leading-none">
+            <span className="gold-shine-text font-black text-base tracking-wider block">GoMobility</span>
+            <span className="text-[10px] tracking-widest uppercase block mt-0.5" style={{ color: '#8899cc' }}>Live Tracking</span>
           </div>
         </div>
 
+        {/* Status pill */}
         {cfg && (
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${cfg.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} animate-pulse`} />
+          <div className={`status-badge flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold ${cfg.color}`}>
+            <span className={`w-2 h-2 rounded-full ${cfg.dot} animate-pulse`} />
             {cfg.label}
           </div>
         )}
