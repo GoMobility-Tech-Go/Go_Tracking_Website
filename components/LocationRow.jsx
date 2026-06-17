@@ -1,3 +1,6 @@
+
+const addr = (loc) => (typeof loc === 'string' ? loc : loc?.address || '—');
+
 export default function LocationRow({ pickup, dropoff }) {
   return (
     <div className="bg-white rounded-2xl border border-royal-100 shadow-royal overflow-hidden">
@@ -17,11 +20,11 @@ export default function LocationRow({ pickup, dropoff }) {
           <div className="flex-1 space-y-2">
             <div className="bg-green-50 border border-green-200 rounded-xl p-2.5">
               <p className="text-[9px] text-green-600 font-bold uppercase tracking-wider mb-0.5">Pickup</p>
-              <p className="text-sm font-bold text-royal-900 leading-snug">{pickup}</p>
+              <p className="text-sm font-bold text-royal-900 leading-snug">{addr(pickup)}</p>
             </div>
             <div className="bg-royal-50 border border-royal-200 rounded-xl p-2.5">
               <p className="text-[9px] text-royal-600 font-bold uppercase tracking-wider mb-0.5">Dropoff</p>
-              <p className="text-sm font-bold text-royal-900 leading-snug">{dropoff}</p>
+              <p className="text-sm font-bold text-royal-900 leading-snug">{addr(dropoff)}</p>
             </div>
           </div>
         </div>

@@ -5,9 +5,10 @@
 **Go-Tracking** — GoMobility ka live ride tracking website. Passenger apni ride ka link share karta hai, koi bhi bina login ke driver ki live location dekh sakta hai.
 
 - **Framework:** Next.js 14 (App Router)
-- **Language:** TypeScript
+- **Language:** JavaScript (JSX) — `.jsx` files, no TypeScript even though `tsconfig.json` exists
 - **Styling:** Tailwind CSS
-- **Map:** react-leaflet (OpenStreetMap — free, no API key)
+- **Map:** Leaflet (dynamic import, SSR-disabled) on OpenStreetMap — no API key
+- **Realtime:** Socket.IO client (`socket.io-client`)
 - **Deploy:** Vercel → `track.gomobility.co.in`
 
 ## Commands
@@ -20,67 +21,77 @@ npm start       # production server
 
 ## Backend API
 
-**Base URL:** `https://api.gomobility.co.in/api/v1`
+**REST base URL:** `https://api.gomobility.co.in/api/v1`
+**Socket host:** `https://api.gomobility.co.in` (same host, default namespace `/`)
 
-Both APIs are **public** — no Authorization header needed.
+Sab public — no Authorization header. Sirf `trackingToken` valid hona chahiye.
 
-### 1. Live Tracking Data (poll every 5s)
+### REST: Live Tracking Snapshot
 ```
 GET /tracking/public/:trackingToken
 ```
-Response fields:
-- `data.status` → `accepted | driver_arrived | in_progress | completed`
-- `data.driver` → `{ name, phone, rating, vehicle: { number, type, color } }`
-- `data.passenger` → `{ name, phone }`
-- `data.location.current` → `{ latitude, longitude, timestamp }` (driver live location)
-- `data.location.pickup` → string address
-- `data.location.dropoff` → string address
+Response shape (envelope: `{ success, statuscode, message, data }`):
+- `data.status` → `assigned | arrived | started | completed | cancelled`
+- `data.driver` → `{ id, name, phone, rating, vehicle: { number, type, color, image } }`
+- `data.passenger` → `{ id, name, phone }`
+- `data.location.pickup` → `{ latitude, longitude, address }`
+- `data.location.dropoff` → `{ latitude, longitude, address }`
+- `data.location.current` → `{ latitude, longitude, timestamp, accuracy }` (nullable)
 - `data.fare` → `{ estimated, final }`
-- `data.route` → array of `{ latitude, longitude, timestamp }` GPS points
-- `data.routeStats` → `{ totalDistance (km), totalDuration (min), pointCount }`
+- `data.timestamps` → `{ startedAt, completedAt }`
+- `data.route` → array of `{ latitude, longitude, timestamp, accuracy }`
+- `data.routeStats` → `{ totalDistance, totalDuration, pointCount, startTime, endTime }`
 
-### 2. Route History
+Errors come back as `{ success: false, statuscode, message, data: {} }`. `lib/api.js` treats messages matching `/not found|tracking disabled|invalid/i` as `NOT_FOUND`.
+
+### REST: Route History
 ```
 GET /tracking/public/:trackingToken/history
 ```
+
+### Socket.IO Events
+- **Client emits:** `tracking:join` `{ trackingToken }` on connect, `tracking:leave` on unmount.
+- **Client listens:** `tracking:joined` (confirmation), `tracking:location-updated` `{ rideId, latitude, longitude, accuracy, timestamp }`, `tracking:error` `{ message }`.
+- **Do NOT emit** `tracking:update-location` — driver app only.
 
 ## File Structure
 
 ```
 app/
-  layout.tsx              # Root layout, Inter font, metadata
-  page.tsx                # Home — branding page
+  layout.jsx              # Root layout, Inter font, metadata
+  page.jsx                # Home — branding page
   globals.css             # Tailwind + Leaflet CSS
-  not-found.tsx           # Invalid token error page
-  track/[token]/page.tsx  # MAIN PAGE — live tracking
+  not-found.jsx           # Invalid token error page
+  demo/page.jsx           # Mock demo with status switcher
+  track/[token]/page.jsx  # MAIN PAGE — live tracking
 
 components/
-  Navbar.tsx        # Top bar — logo + live status pill
-  TrackingMap.tsx   # Leaflet map — driver marker, pickup/dropoff pins, route polyline
-  DriverCard.tsx    # Driver avatar, name, vehicle, rating, call button
-  StatusBar.tsx     # 4-step progress bar + status message
-  EtaRow.tsx        # 3 boxes: Duration | Fare | Distance
-  LocationRow.tsx   # Pickup & dropoff addresses
-  ShareButton.tsx   # WhatsApp + Copy link + Native share
-  RideCompleted.tsx # Ride khatam screen — final fare, route summary
-  LoadingScreen.tsx # Skeleton loader
+  Navbar.jsx        # Top bar — logo + status pill + Reconnecting badge
+  TrackingMap.jsx   # Leaflet map — driver marker (animated), pickup/dropoff pins, polyline
+  DriverCard.jsx    # Driver avatar, name, vehicle, rating, call button
+  StatusBar.jsx     # 4-step progress + status message (cancelled = step -1)
+  EtaRow.jsx        # 3 boxes: Duration | Fare | Distance
+  LocationRow.jsx   # Pickup & dropoff addresses (reads from object.address)
+  ShareButton.jsx   # WhatsApp + Copy link + Native share
+  RideCompleted.jsx # Terminal screen — handles both 'completed' and 'cancelled' variants
+  LoadingScreen.jsx # Skeleton loader
 
 hooks/
-  useTrackingData.ts  # Polling hook — fetches every 5s, stops on 'completed'
+  useTrackingData.js    # Hybrid: REST initial + 30s refresh, merges socket-fed current location
+  useTrackingSocket.js  # Socket.IO lifecycle — join/leave/listeners
 
 lib/
-  api.ts              # fetchTrackingData(), fetchRouteHistory()
-
-types/
-  tracking.ts         # TypeScript interfaces: TrackingData, Driver, Vehicle, etc.
+  api.js                # fetchTrackingData(), fetchRouteHistory(), exports API_HOST
 ```
 
 ## Key Decisions
 
-- **Leaflet SSR issue:** `TrackingMap` is loaded with `dynamic(() => import(...), { ssr: false })` — Leaflet needs `window` object, not available in SSR
-- **Polling:** `useTrackingData` hook uses `setInterval(5000)` — auto-stops when `status === 'completed'`
-- **Map markers:** Custom `divIcon` with emoji — no external image needed
-- **Error handling:** `error === 'NOT_FOUND'` → `notFound()`, other errors → retry button
+- **Leaflet SSR:** `TrackingMap` is loaded via `dynamic(() => import(...), { ssr: false })` — Leaflet needs `window`.
+- **Realtime first, REST as backup:** Live driver location ab socket se aati hai (`tracking:location-updated`). REST sirf initial snapshot + 30s pe status/route refresh ke liye.
+- **Socket disables on terminal:** `useTrackingData` socket ko `enabled: !isTerminal` deta hai — `completed`/`cancelled` pe socket disconnect.
+- **Location merge:** Jab REST refresh aata hai, agar prev (socket) ka `current.timestamp` REST ke timestamp se naya hai, prev wala rakhte hain — staleness prevent.
+- **Map markers from real coords:** `TrackingMap` ab `pickup.latitude/longitude` aur `dropoff.latitude/longitude` use karta hai (pehle current se fake offsets the).
+- **Auto-fit bounds:** First paint pe pickup/dropoff/driver sab fit karne ke liye `map.fitBounds`.
 
 ## Environment Variables
 
@@ -90,42 +101,50 @@ NEXT_PUBLIC_API_BASE_URL=https://api.gomobility.co.in/api/v1
 NEXT_PUBLIC_APP_URL=https://track.gomobility.co.in
 ```
 
+> `API_HOST` is derived by stripping `/api/v1` from `NEXT_PUBLIC_API_BASE_URL` — socket connects to bare host.
+
 ## Ride Status Flow
 
 ```
-accepted → driver_arrived → in_progress → completed
+assigned → arrived → started → completed
+                              ↘ cancelled (at any point)
 ```
 
-Status se UI map:
-- `accepted`       → Blue  — "Driver is on the way to you"
-- `driver_arrived` → Amber — "Driver has arrived!"
-- `in_progress`    → Green — "Ride in progress"
-- `completed`      → Grey  — Show RideCompleted screen
+| status | Navbar pill | StatusBar message | Terminal? |
+|---|---|---|---|
+| `assigned`  | Driver Coming    | "Driver is on the way"  | no |
+| `arrived`   | Driver Arrived   | "Driver has arrived!"   | no |
+| `started`   | Ride In Progress | "Ride in progress"      | no |
+| `completed` | Completed (grey) | Goes to RideCompleted   | yes |
+| `cancelled` | Cancelled (red)  | Goes to RideCompleted   | yes |
 
 ## Conventions
 
 - Tailwind only — no inline styles except Leaflet map height
 - All components are `default export`
 - `'use client'` sirf wahan jahan `useState`/`useEffect`/events use ho
-- Colors: primary = `#1565C0` (Tailwind `primary-700`), bg = white, light = `#F0F4FF`
+- Colors: royal blue `#0E1B55` + gold `#D4AF37` theme
 - Rounded corners: `rounded-2xl` cards, `rounded-full` pills/buttons
 - No `console.log` in committed code
 
 ## Common Tasks
 
-**Polling interval change karna:**
-→ `hooks/useTrackingData.ts` line 25 → `setInterval(poll, 5000)` → 5000 = 5 seconds
+**REST refresh interval change karna:**
+→ `hooks/useTrackingData.js` → `REFRESH_MS = 30000`
 
 **Naya status add karna:**
-→ `types/tracking.ts` → `RideStatus` type
-→ `components/StatusBar.tsx` → `statusMessage` aur `steps` arrays
-→ `components/Navbar.tsx` → `statusConfig` object
+→ `components/StatusBar.jsx` → `steps`, `statusMessage`, `stepIndex`
+→ `components/Navbar.jsx` → `statusConfig`
+→ `hooks/useTrackingData.js` → `TERMINAL` set agar new status terminal hai
+
+**Socket event add karna:**
+→ `hooks/useTrackingSocket.js` → naya listener wahan add karo, ref-based callback pattern follow karo
 
 **Map center/zoom change karna:**
-→ `components/TrackingMap.tsx` → `map.setView(defaultCenter, 14)` → 14 = zoom level
+→ `components/TrackingMap.jsx` → `map.setView(initialCenter, 15)`
 
 **Share message change karna:**
-→ `components/ShareButton.tsx` → `shareWhatsApp` function
+→ `components/ShareButton.jsx` → `shareWhatsApp` function
 
 **Domain change karna:**
 → `.env.local` → `NEXT_PUBLIC_APP_URL`

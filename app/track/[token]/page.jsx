@@ -54,8 +54,10 @@ function InfoCards({ data, token, socketLive }) {
       </div>
 
       <div className="flex items-center justify-center gap-2 py-1">
-        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-xs text-royal-400">Updates every 5 seconds</span>
+        <span className={`w-2 h-2 rounded-full ${socketLive ? 'bg-green-500 animate-pulse' : 'bg-amber-400'}`} />
+        <span className="text-xs text-royal-400">
+          {socketLive ? 'Live updates from driver' : 'Updates every 5 seconds'}
+        </span>
       </div>
     </>
   );
@@ -69,7 +71,7 @@ export default function TrackingPage() {
   if (loading) return <LoadingScreen />;
 
   if (error === 'NOT_FOUND') notFound();
-  if (error) {
+  if (error && !data) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#0E1B55' }}>
         <div className="bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full">
@@ -89,11 +91,11 @@ export default function TrackingPage() {
   }
 
   if (!data) return null;
-  if (data.status === 'completed') return <RideCompleted data={data} />;
+  if (data.status === 'completed' || data.status === 'cancelled') return <RideCompleted data={data} />;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-royal-50">
-      <Navbar status={data.status} />
+      <Navbar status={data.status} connected={socketLive} />
 
       {/* ── DESKTOP: map fills screen, floating glass panel ── */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden">

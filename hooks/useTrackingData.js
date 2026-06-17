@@ -1,25 +1,34 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchTrackingData } from '../lib/api';
-import { io } from 'socket.io-client';
+import { useTrackingSocket } from './useTrackingSocket';
+
+const TERMINAL = new Set(['completed', 'cancelled']);
+const POLL_MS = 5000;
 
 export const useTrackingData = (token) => {
-  const [data, setData]         = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
-  const [socketLive, setSocketLive] = useState(false);
-  const intervalRef             = useRef(null);
-  const socketRef               = useRef(null);
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+  const intervalRef           = useRef(null);
 
-  // REST polling — full ride data (status, driver, fare, etc.)
-  const poll = useCallback(async () => {
+  const refresh = useCallback(async () => {
     try {
       const result = await fetchTrackingData(token);
-      setData(result);
+      setData((prev) => {
+        if (!prev) return result;
+        // Keep socket-fed current location if newer than REST snapshot
+        const prevTs = prev.location?.current?.timestamp;
+        const nextTs = result.location?.current?.timestamp;
+        if (prevTs && (!nextTs || new Date(prevTs) > new Date(nextTs))) {
+          return { ...result, location: { ...result.location, current: prev.location.current }, route: prev.route || result.route };
+        }
+        return result;
+      });
       setError(null);
-      if (result?.status === 'completed') {
+      if (TERMINAL.has(result?.status) && intervalRef.current) {
         clearInterval(intervalRef.current);
-        socketRef.current?.disconnect();
+        intervalRef.current = null;
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'ERROR');
@@ -29,68 +38,43 @@ export const useTrackingData = (token) => {
   }, [token]);
 
   useEffect(() => {
-    // ── REST polling ──────────────────────────────────────────────
-    poll();
-    intervalRef.current = setInterval(poll, 5000);
-
-    // ── Socket.IO — real-time driver location ─────────────────────
-    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://api.gomobility.co.in';
-
-    const socket = io(SOCKET_URL, {
-      path: '/socket.io',
-      // Public tracking namespace — no JWT needed
-      // Backend mein /tracking namespace add karna hoga (unauthenticated)
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      timeout: 10000,
-    });
-
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-      setSocketLive(true);
-      // Join tracking room with token
-      socket.emit('tracking:join', { trackingToken: token });
-    });
-
-    // Backend driver:location_update se yeh event aata hai
-    socket.on('tracking:location-updated', (locationData) => {
-      setData(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          location: {
-            ...prev.location,
-            current: {
-              latitude:  locationData.latitude,
-              longitude: locationData.longitude,
-              accuracy:  locationData.accuracy || null,
-              timestamp: locationData.timestamp,
-            },
-          },
-        };
-      });
-    });
-
-    socket.on('disconnect', () => {
-      setSocketLive(false);
-    });
-
-    socket.on('connect_error', () => {
-      // Socket connect nahi hua — polling se kaam chalega, no error shown
-      setSocketLive(false);
-    });
-
+    if (!token) return;
+    refresh();
+    intervalRef.current = setInterval(refresh, POLL_MS);
     return () => {
-      clearInterval(intervalRef.current);
-      if (socket.connected) {
-        socket.emit('tracking:leave', { trackingToken: token });
-      }
-      socket.disconnect();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
-  }, [poll, token]);
+  }, [token, refresh]);
+
+  const isTerminal = data?.status ? TERMINAL.has(data.status) : false;
+
+  const handleLocation = useCallback((loc) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const lat = Number(loc.latitude);
+      const lng = Number(loc.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return prev;
+      const current = {
+        latitude: lat,
+        longitude: lng,
+        accuracy: loc.accuracy != null ? Number(loc.accuracy) : null,
+        timestamp: loc.timestamp,
+      };
+      const route = prev.route ? [...prev.route, current] : [current];
+      return { ...prev, location: { ...prev.location, current }, route };
+    });
+  }, []);
+
+  const handleSocketError = useCallback((msg) => {
+    setError((prev) => prev || msg);
+  }, []);
+
+  const { connected: socketLive } = useTrackingSocket(token, {
+    onLocation: handleLocation,
+    onError: handleSocketError,
+    enabled: !!token && !isTerminal,
+  });
 
   return { data, loading, error, socketLive };
 };
