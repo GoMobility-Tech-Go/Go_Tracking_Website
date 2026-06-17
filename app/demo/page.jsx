@@ -11,7 +11,7 @@ import ShareButton from '../../components/ShareButton';
 
 const TrackingMap = dynamic(() => import('../../components/TrackingMap'), { ssr: false });
 
-const STATUSES = ['accepted', 'driver_arrived', 'in_progress'];
+const STATUSES = ['assigned', 'arrived', 'started'];
 
 const mockData = {
   rideId: 104,
@@ -24,8 +24,8 @@ const mockData = {
   },
   passenger: { name: 'Irshad Alam' },
   location: {
-    pickup:  'Baghi, West Champaran, Bihar',
-    dropoff: 'Lauriya, West Champaran, Bihar',
+    pickup:  { latitude: 27.0722, longitude: 84.3853, address: 'Baghi, West Champaran, Bihar' },
+    dropoff: { latitude: 27.0780, longitude: 84.3950, address: 'Lauriya, West Champaran, Bihar' },
     current: { latitude: 27.0722, longitude: 84.3853 },
   },
   fare:       { estimated: '150.00', final: null },
@@ -91,7 +91,7 @@ function InfoCards({ data, statusIndex, setStatusIndex }) {
                 }`}
                 style={i === statusIndex ? { background: '#0E1B55' } : {}}
               >
-                {s === 'accepted' ? '🚗 Coming' : s === 'driver_arrived' ? '📍 Arrived' : '🛣️ In Ride'}
+                {s === 'assigned' ? '🚗 Coming' : s === 'arrived' ? '📍 Arrived' : '🛣️ In Ride'}
               </button>
             ))}
           </div>
