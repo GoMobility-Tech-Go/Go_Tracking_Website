@@ -14,15 +14,15 @@ import RideCompleted from '../../../components/RideCompleted';
 
 const TrackingMap = dynamic(() => import('../../../components/TrackingMap'), { ssr: false });
 
-function InfoCards({ data, token, connected }) {
+function InfoCards({ data, token, socketLive }) {
   return (
     <>
       <div className="flex items-center justify-between py-1 px-1">
         <p className="text-[10px] text-royal-400 font-bold uppercase tracking-widest">Live Tracking</p>
         <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
-          <span className={`text-[10px] font-bold ${connected ? 'text-green-600' : 'text-amber-600'}`}>
-            {connected ? 'LIVE' : 'CONNECTING…'}
+          <span className={`w-2 h-2 rounded-full animate-pulse ${socketLive ? 'bg-green-500' : 'bg-amber-400'}`} />
+          <span className={`text-[10px] font-bold ${socketLive ? 'text-green-600' : 'text-amber-600'}`}>
+            {socketLive ? 'LIVE · Socket' : 'LIVE · 5s poll'}
           </span>
         </div>
       </div>
@@ -54,9 +54,9 @@ function InfoCards({ data, token, connected }) {
       </div>
 
       <div className="flex items-center justify-center gap-2 py-1">
-        <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+        <span className={`w-2 h-2 rounded-full ${socketLive ? 'bg-green-500 animate-pulse' : 'bg-amber-400'}`} />
         <span className="text-xs text-royal-400">
-          {connected ? 'Live updates from driver' : 'Reconnecting…'}
+          {socketLive ? 'Live updates from driver' : 'Updates every 5 seconds'}
         </span>
       </div>
     </>
@@ -66,7 +66,7 @@ function InfoCards({ data, token, connected }) {
 export default function TrackingPage() {
   const params = useParams();
   const token  = params.token;
-  const { data, loading, error, connected } = useTrackingData(token);
+  const { data, loading, error, socketLive } = useTrackingData(token);
 
   if (loading) return <LoadingScreen />;
 
@@ -95,7 +95,7 @@ export default function TrackingPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-royal-50">
-      <Navbar status={data.status} connected={connected} />
+      <Navbar status={data.status} connected={socketLive} />
 
       {/* ── DESKTOP: map fills screen, floating glass panel ── */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden">
@@ -114,7 +114,7 @@ export default function TrackingPage() {
           <div className="h-1 bg-gradient-to-r from-royal-900 via-gold-500 to-royal-900 flex-shrink-0" />
           <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-6"
             style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)' }}>
-            <InfoCards data={data} token={token} connected={connected} />
+            <InfoCards data={data} token={token} socketLive={socketLive} />
           </div>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function TrackingPage() {
         <div className="flex-1 overflow-y-auto bg-white border-t border-royal-100">
           <div className="h-1 bg-gradient-to-r from-royal-900 via-gold-500 to-royal-900" />
           <div className="p-4 space-y-3 pb-8">
-            <InfoCards data={data} token={token} connected={connected} />
+            <InfoCards data={data} token={token} socketLive={socketLive} />
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { fetchTrackingData } from '../lib/api';
 import { useTrackingSocket } from './useTrackingSocket';
 
 const TERMINAL = new Set(['completed', 'cancelled']);
-const REFRESH_MS = 30000;
+const POLL_MS = 5000;
 
 export const useTrackingData = (token) => {
   const [data, setData]       = useState(null);
@@ -40,7 +40,7 @@ export const useTrackingData = (token) => {
   useEffect(() => {
     if (!token) return;
     refresh();
-    intervalRef.current = setInterval(refresh, REFRESH_MS);
+    intervalRef.current = setInterval(refresh, POLL_MS);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -70,11 +70,11 @@ export const useTrackingData = (token) => {
     setError((prev) => prev || msg);
   }, []);
 
-  const { connected } = useTrackingSocket(token, {
+  const { connected: socketLive } = useTrackingSocket(token, {
     onLocation: handleLocation,
     onError: handleSocketError,
     enabled: !!token && !isTerminal,
   });
 
-  return { data, loading, error, connected };
+  return { data, loading, error, socketLive };
 };
