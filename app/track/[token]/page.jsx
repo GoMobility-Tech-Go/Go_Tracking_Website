@@ -3,6 +3,7 @@
 import { useParams, notFound } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useTrackingData } from '../../../hooks/useTrackingData';
+import { isTerminal, isPreAssignment } from '../../../lib/status';
 import Navbar        from '../../../components/Navbar';
 import DriverCard    from '../../../components/DriverCard';
 import StatusBar     from '../../../components/StatusBar';
@@ -27,13 +28,16 @@ function InfoCards({ data, token, socketLive }) {
         </div>
       </div>
 
-      <DriverCard driver={data.driver} />
+      {data.driver && <DriverCard driver={data.driver} />}
       <StatusBar status={data.status} />
       <EtaRow
         estimatedFare={data.fare.estimated}
         finalFare={data.fare.final}
         totalDistance={data.routeStats?.totalDistance}
         totalDuration={data.routeStats?.totalDuration}
+        plannedDistance={data.routeStats?.plannedDistance}
+        plannedDuration={data.routeStats?.plannedDuration}
+        eta={data.eta}
       />
       <LocationRow pickup={data.location.pickup} dropoff={data.location.dropoff} />
       <ShareButton token={token} />
@@ -91,7 +95,7 @@ export default function TrackingPage() {
   }
 
   if (!data) return null;
-  if (data.status === 'completed' || data.status === 'cancelled') return <RideCompleted data={data} />;
+  if (isTerminal(data.status)) return <RideCompleted data={data} />;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-royal-50">
@@ -106,6 +110,8 @@ export default function TrackingPage() {
             pickup={data.location.pickup}
             dropoff={data.location.dropoff}
             route={data.route || []}
+            status={data.status}
+            routes={data.routes}
           />
         </div>
 
@@ -127,6 +133,8 @@ export default function TrackingPage() {
             pickup={data.location.pickup}
             dropoff={data.location.dropoff}
             route={data.route || []}
+            status={data.status}
+            routes={data.routes}
           />
         </div>
         <div className="flex-1 overflow-y-auto bg-white border-t border-royal-100">

@@ -1,11 +1,13 @@
 'use client';
 
 const statusConfig = {
-  assigned:  { label: 'Driver Coming',    color: 'bg-blue-500/20 text-gold-300 border border-gold-500/40',    dot: 'bg-gold-400' },
-  arrived:   { label: 'Driver Arrived',   color: 'bg-amber-500/20 text-amber-300 border border-amber-400/40', dot: 'bg-amber-400' },
-  started:   { label: 'Ride In Progress', color: 'bg-green-500/20 text-green-300 border border-green-400/40', dot: 'bg-green-400' },
-  completed: { label: 'Completed',        color: 'bg-gray-500/20 text-gray-300 border border-gray-400/40',    dot: 'bg-gray-400' },
-  cancelled: { label: 'Cancelled',        color: 'bg-red-500/20 text-red-300 border border-red-400/40',      dot: 'bg-red-400' },
+  requested:       { label: 'Finding Driver',    color: 'bg-blue-500/20 text-blue-300 border border-blue-400/40',   dot: 'bg-blue-400' },
+  driver_assigned: { label: 'Driver Coming',     color: 'bg-blue-500/20 text-gold-300 border border-gold-500/40',   dot: 'bg-gold-400' },
+  driver_arrived:  { label: 'Driver Arrived',    color: 'bg-amber-500/20 text-amber-300 border border-amber-400/40',dot: 'bg-amber-400' },
+  in_progress:     { label: 'Ride In Progress',  color: 'bg-green-500/20 text-green-300 border border-green-400/40',dot: 'bg-green-400' },
+  completed:       { label: 'Completed',         color: 'bg-gray-500/20 text-gray-300 border border-gray-400/40',   dot: 'bg-gray-400' },
+  cancelled:       { label: 'Cancelled',         color: 'bg-red-500/20 text-red-300 border border-red-400/40',     dot: 'bg-red-400' },
+  expired:         { label: 'Link Expired',      color: 'bg-gray-500/20 text-gray-300 border border-gray-400/40',   dot: 'bg-gray-400' },
 };
 
 export default function Navbar({ status, connected }) {

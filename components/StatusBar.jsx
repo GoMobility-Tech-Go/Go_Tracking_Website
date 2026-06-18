@@ -1,22 +1,32 @@
 const steps = [
-  { key: 'assigned', label: 'Coming',  icon: '🚗' },
-  { key: 'arrived',  label: 'Arrived', icon: '📍' },
-  { key: 'started',  label: 'On Way',  icon: '🛣️' },
-  { key: 'completed', label: 'Done',   icon: '✅' },
+  { key: 'driver_assigned', label: 'Coming',  icon: '🚗' },
+  { key: 'driver_arrived',  label: 'Arrived', icon: '📍' },
+  { key: 'in_progress',     label: 'On Way',  icon: '🛣️' },
+  { key: 'completed',       label: 'Done',    icon: '✅' },
 ];
 
 const statusMessage = {
-  assigned:  { title: 'Driver is on the way', subtitle: 'Heading to your pickup point', bg: 'from-royal-900 to-royal-800',  icon: '🚗' },
-  arrived:   { title: 'Driver has arrived!',  subtitle: 'Waiting at the pickup point',  bg: 'from-amber-700 to-amber-600',  icon: '📍' },
-  started:   { title: 'Ride in progress',     subtitle: 'On the way to destination',    bg: 'from-green-800 to-green-700',  icon: '🛣️' },
-  completed: { title: 'Ride completed',       subtitle: 'Reached destination safely',   bg: 'from-gray-700 to-gray-600',    icon: '✅' },
-  cancelled: { title: 'Ride cancelled',       subtitle: 'This ride was cancelled',      bg: 'from-red-800 to-red-600',      icon: '✖️' },
+  requested:       { title: 'Finding a driver',      subtitle: 'Connecting you with a nearby driver', bg: 'from-royal-900 to-royal-800',  icon: '🔍' },
+  driver_assigned: { title: 'Driver is on the way',  subtitle: 'Heading to your pickup point',        bg: 'from-royal-900 to-royal-800',  icon: '🚗' },
+  driver_arrived:  { title: 'Driver has arrived!',   subtitle: 'Waiting at the pickup point',         bg: 'from-amber-700 to-amber-600',  icon: '📍' },
+  in_progress:     { title: 'Ride in progress',      subtitle: 'On the way to destination',           bg: 'from-green-800 to-green-700',  icon: '🛣️' },
+  completed:       { title: 'Ride completed',        subtitle: 'Reached destination safely',          bg: 'from-gray-700 to-gray-600',    icon: '✅' },
+  cancelled:       { title: 'Ride cancelled',        subtitle: 'This ride was cancelled',             bg: 'from-red-800 to-red-600',      icon: '✖️' },
+  expired:         { title: 'Tracking link expired', subtitle: 'This link is no longer active',       bg: 'from-gray-700 to-gray-600',    icon: '⌛' },
 };
 
-const stepIndex = { assigned: 0, arrived: 1, started: 2, completed: 3, cancelled: -1 };
+const stepIndex = {
+  requested: -1,
+  driver_assigned: 0,
+  driver_arrived: 1,
+  in_progress: 2,
+  completed: 3,
+  cancelled: -1,
+  expired: -1,
+};
 
 export default function StatusBar({ status }) {
-  const msg     = statusMessage[status] || statusMessage.assigned;
+  const msg     = statusMessage[status] || statusMessage.driver_assigned;
   const current = stepIndex[status] ?? 0;
 
   return (
