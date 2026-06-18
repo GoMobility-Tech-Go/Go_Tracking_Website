@@ -11,7 +11,7 @@ import ShareButton from '../../components/ShareButton';
 
 const TrackingMap = dynamic(() => import('../../components/TrackingMap'), { ssr: false });
 
-const STATUSES = ['assigned', 'arrived', 'started'];
+const STATUSES = ['driver_assigned', 'driver_arrived', 'in_progress'];
 
 const mockData = {
   rideId: 104,
@@ -91,7 +91,7 @@ function InfoCards({ data, statusIndex, setStatusIndex }) {
                 }`}
                 style={i === statusIndex ? { background: '#0E1B55' } : {}}
               >
-                {s === 'assigned' ? '🚗 Coming' : s === 'arrived' ? '📍 Arrived' : '🛣️ In Ride'}
+                {s === 'driver_assigned' ? '🚗 Coming' : s === 'driver_arrived' ? '📍 Arrived' : '🛣️ In Ride'}
               </button>
             ))}
           </div>
@@ -136,6 +136,7 @@ export default function DemoPage() {
             pickup={data.location.pickup}
             dropoff={data.location.dropoff}
             route={data.route}
+            status={STATUSES[statusIndex]}
           />
         </div>
 
@@ -157,6 +158,7 @@ export default function DemoPage() {
             pickup={data.location.pickup}
             dropoff={data.location.dropoff}
             route={data.route}
+            status={STATUSES[statusIndex]}
           />
         </div>
         <div className="flex-1 overflow-y-auto bg-white border-t border-royal-100">

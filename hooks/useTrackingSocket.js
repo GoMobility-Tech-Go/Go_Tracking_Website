@@ -3,13 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { API_HOST } from '../lib/api';
 
-export const useTrackingSocket = (token, { onLocation, onError, enabled = true } = {}) => {
+export const useTrackingSocket = (
+  token,
+  { onLocation, onRouteUpdate, onError, enabled = true } = {},
+) => {
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
   const onLocationRef = useRef(onLocation);
+  const onRouteUpdateRef = useRef(onRouteUpdate);
   const onErrorRef = useRef(onError);
 
   useEffect(() => { onLocationRef.current = onLocation; }, [onLocation]);
+  useEffect(() => { onRouteUpdateRef.current = onRouteUpdate; }, [onRouteUpdate]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
 
   useEffect(() => {
@@ -34,6 +39,9 @@ export const useTrackingSocket = (token, { onLocation, onError, enabled = true }
     socket.on('tracking:joined', () => {});
     socket.on('tracking:location-updated', (loc) => {
       onLocationRef.current?.(loc);
+    });
+    socket.on('tracking:route-updated', (payload) => {
+      onRouteUpdateRef.current?.(payload);
     });
     socket.on('tracking:error', (e) => {
       onErrorRef.current?.(e?.message || 'Tracking unavailable');

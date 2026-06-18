@@ -4,18 +4,52 @@ const num = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
-export default function EtaRow({ estimatedFare, finalFare, totalDistance, totalDuration }) {
+function formatClock(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+export default function EtaRow({
+  estimatedFare,
+  finalFare,
+  totalDistance,      // km (breadcrumb sum — existing)
+  totalDuration,      // min (breadcrumb sum — existing)
+  eta,                // { remainingDistance (m), remainingDuration (s), arrivalTime }
+  plannedDistance,    // m — from routeStats.plannedDistance
+  plannedDuration,    // s — from routeStats.plannedDuration
+}) {
   const fareNum = num(finalFare) ?? num(estimatedFare);
-  const dist    = num(totalDistance);
-  const dur     = num(totalDuration);
   const isFinal = num(finalFare) != null;
+
+  // Duration: prefer live ETA, then planned, then breadcrumb
+  const liveSec    = num(eta?.remainingDuration);
+  const plannedSec = num(plannedDuration);
+  const breadcrMin = num(totalDuration);
+  const durationMin = liveSec != null ? Math.max(0, Math.round(liveSec / 60))
+                    : plannedSec != null ? Math.round(plannedSec / 60)
+                    : breadcrMin != null ? Math.round(breadcrMin)
+                    : null;
+  const arrival = formatClock(eta?.arrivalTime);
+  const durLabel = liveSec != null ? 'ETA' : 'Duration';
+
+  // Distance: prefer live remaining, then planned, then breadcrumb (km)
+  const liveMeters    = num(eta?.remainingDistance);
+  const plannedMeters = num(plannedDistance);
+  const breadcrKm     = num(totalDistance);
+  const distKm = liveMeters != null ? liveMeters / 1000
+              : plannedMeters != null ? plannedMeters / 1000
+              : breadcrKm;
+  const distLabel = liveMeters != null ? 'Remaining' : 'Distance';
 
   const boxes = [
     {
       icon: '⏱️',
-      value: dur != null ? `${Math.round(dur)}` : '—',
+      value: durationMin != null ? `${durationMin}` : '—',
       unit: 'min',
-      label: 'Duration',
+      label: durLabel,
+      sub: arrival ? `Arrives ${arrival}` : null,
       gradient: 'from-royal-900 to-royal-700',
     },
     {
@@ -28,9 +62,9 @@ export default function EtaRow({ estimatedFare, finalFare, totalDistance, totalD
     },
     {
       icon: '📏',
-      value: dist != null ? `${dist.toFixed(1)}` : '—',
+      value: distKm != null ? `${distKm.toFixed(1)}` : '—',
       unit: 'km',
-      label: 'Distance',
+      label: distLabel,
       gradient: 'from-royal-900 to-royal-700',
     },
   ];
@@ -47,6 +81,7 @@ export default function EtaRow({ estimatedFare, finalFare, totalDistance, totalD
               {b.unit && <span className="text-xs font-bold text-royal-400 ml-0.5">{b.unit}</span>}
             </div>
             <div className="text-royal-400 text-[10px] font-semibold mt-1">{b.label}</div>
+            {b.sub && <div className="text-green-600 text-[9px] font-bold mt-0.5">{b.sub}</div>}
           </div>
         </div>
       ))}

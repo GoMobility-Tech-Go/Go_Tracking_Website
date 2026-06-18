@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchTrackingData } from '../lib/api';
 import { useTrackingSocket } from './useTrackingSocket';
+import { isTerminal } from '../lib/status';
 
-const TERMINAL = new Set(['completed', 'cancelled']);
 const POLL_MS = 5000;
 
 export const useTrackingData = (token) => {
@@ -20,13 +20,15 @@ export const useTrackingData = (token) => {
         // Keep socket-fed current location if newer than REST snapshot
         const prevTs = prev.location?.current?.timestamp;
         const nextTs = result.location?.current?.timestamp;
+        const merged = { ...result };
         if (prevTs && (!nextTs || new Date(prevTs) > new Date(nextTs))) {
-          return { ...result, location: { ...result.location, current: prev.location.current }, route: prev.route || result.route };
+          merged.location = { ...result.location, current: prev.location.current };
+          merged.route = prev.route || result.route;
         }
-        return result;
+        return merged;
       });
       setError(null);
-      if (TERMINAL.has(result?.status) && intervalRef.current) {
+      if (isTerminal(result?.status) && intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
@@ -47,7 +49,7 @@ export const useTrackingData = (token) => {
     };
   }, [token, refresh]);
 
-  const isTerminal = data?.status ? TERMINAL.has(data.status) : false;
+  const terminal = isTerminal(data?.status);
 
   const handleLocation = useCallback((loc) => {
     setData((prev) => {
@@ -59,10 +61,29 @@ export const useTrackingData = (token) => {
         latitude: lat,
         longitude: lng,
         accuracy: loc.accuracy != null ? Number(loc.accuracy) : null,
+        heading: loc.heading != null ? Number(loc.heading) : null,
+        speed: loc.speed != null ? Number(loc.speed) : null,
         timestamp: loc.timestamp,
       };
       const route = prev.route ? [...prev.route, current] : [current];
       return { ...prev, location: { ...prev.location, current }, route };
+    });
+  }, []);
+
+  // Socket emits this when backend recomputes toPickup or refreshes ETA
+  // (driver moved >300m or cache >60s old). Not on every driver ping.
+  const handleRouteUpdate = useCallback((payload) => {
+    if (!payload) return;
+    setData((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev };
+      if (payload.toPickup !== undefined) {
+        next.routes = { ...(prev.routes || {}), toPickup: payload.toPickup };
+      }
+      if (payload.eta !== undefined) {
+        next.eta = payload.eta;
+      }
+      return next;
     });
   }, []);
 
@@ -72,8 +93,9 @@ export const useTrackingData = (token) => {
 
   const { connected: socketLive } = useTrackingSocket(token, {
     onLocation: handleLocation,
+    onRouteUpdate: handleRouteUpdate,
     onError: handleSocketError,
-    enabled: !!token && !isTerminal,
+    enabled: !!token && !terminal,
   });
 
   return { data, loading, error, socketLive };
